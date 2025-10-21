@@ -60,12 +60,11 @@ st.sidebar.caption("⚙️ Data: Yahoo Finance | Forecast: ML Linear Regression 
 if st.sidebar.button("🔄 Refresh Data Now"):
     st.rerun()
 
-# Auto-refresh functionality using placeholder
-if auto_refresh and interval_seconds:
-    placeholder = st.empty()
-    placeholder.info(f"🔄 Auto-refreshing every {refresh_interval.lower()}")
-    time.sleep(interval_seconds)
-    st.rerun()
+# Auto-refresh status
+if auto_refresh:
+    st.info(f"🔄 Auto-refresh enabled: {refresh_interval.lower()}")
+else:
+    st.info("🔄 Auto-refresh disabled")
 
 # --- Date range ---
 end_date = datetime.date.today()
