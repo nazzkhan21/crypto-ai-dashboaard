@@ -304,18 +304,22 @@ for coin in coins:
         with col4:
             st.metric(label="Price Position", value=f"{price_position:.1%}")
 
+    # Get current timestamp for this signal
+    current_timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+    
     results.append({
         "Coin": coin.replace("-USD", ""),
         "Current Price": round(last_price, 2),
         "Predicted Price (3 days)": round(next_price, 2),
         "Change (%)": round(predicted_change, 2),
-        "Signal": signal,
+        "Signal": f"{signal} (Updated: {current_timestamp})",
         "Confidence": f"{min(round(abs(predicted_change)*10,1),100)}%"
     })
 
 # --- Summary Table ---
 if results:
     st.markdown("### 📊 Summary Table")
+    st.caption(f"🕒 Analysis completed at: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     table = pd.DataFrame(results)
     st.dataframe(table, width='stretch')
 
