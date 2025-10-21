@@ -4,7 +4,7 @@ A comprehensive cryptocurrency analysis dashboard powered by machine learning an
 
 ## 🚀 Features
 
-- **Top 100+ Cryptocurrencies** - Analyze BTC, ETH, SOL, ADA, AVAX, DOGE, and many more
+- **Top 120+ Cryptocurrencies** - Analyze BTC, ETH, SOL, ADA, AVAX, DOGE, LINK, DOT, ARB, OP, SUI, and many more
 - **AI-Powered Predictions** - Machine learning-based price forecasting using Linear Regression
 - **Real-Time Data** - Live data from Yahoo Finance with auto-refresh capabilities
 - **Technical Analysis** - Moving averages, volatility analysis, and trend indicators

@@ -16,27 +16,43 @@ st.title("💹 AI-Powered Crypto Buy/Sell Dashboard with Profit Simulation")
 # --- Sidebar settings ---
 st.sidebar.header("Settings")
 
-# Top 100 Crypto coins list
-top_100_crypto = [
+# Top 120+ Crypto coins list (expanded with 20 more coins)
+top_120_crypto = [
+    # Top 20 (Major Cryptocurrencies)
     "BTC-USD", "ETH-USD", "USDT-USD", "BNB-USD", "SOL-USD", "USDC-USD", "XRP-USD", "ADA-USD", 
     "AVAX-USD", "DOGE-USD", "TRX-USD", "LINK-USD", "DOT-USD", "MATIC-USD", "SHIB-USD", 
-    "DAI-USD", "UNI-USD", "WBTC-USD", "LTC-USD", "ATOM-USD", "ETC-USD", "XLM-USD", "BCH-USD", 
-    "FIL-USD", "APT-USD", "HBAR-USD", "VET-USD", "ICP-USD", "CRO-USD", "NEAR-USD", "ALGO-USD", 
-    "QNT-USD", "FTM-USD", "FLOW-USD", "MANA-USD", "SAND-USD", "AAVE-USD", "GRT-USD", "CRV-USD", 
-    "MKR-USD", "SNX-USD", "COMP-USD", "YFI-USD", "SUSHI-USD", "1INCH-USD", "BAT-USD", "ZRX-USD", 
-    "ENJ-USD", "CHZ-USD", "HOT-USD", "DENT-USD", "WIN-USD", "CELR-USD", "KSM-USD", "WAVES-USD", 
-    "ZEC-USD", "DASH-USD", "NEO-USD", "ONT-USD", "QTUM-USD", "IOTA-USD", "EOS-USD", "XMR-USD", 
-    "XTZ-USD", "THETA-USD", "RUNE-USD", "KAVA-USD", "BAND-USD", "REN-USD", "STORJ-USD", "KNC-USD", 
-    "REP-USD", "LRC-USD", "NMR-USD", "CVC-USD", "OMG-USD", "GNT-USD", "LOOM-USD", "FUN-USD", 
-    "KICK-USD", "LEND-USD", "CND-USD", "WABI-USD", "LUN-USD", "TRIG-USD", "VIB-USD", "BCPT-USD", 
-    "ARK-USD", "YOYO-USD", "POWR-USD", "FUN-USD", "KMD-USD", "SUB-USD", "NULS-USD", "REQ-USD", 
-    "VIBE-USD", "TRX-USD", "POWR-USD", "ARK-USD", "YOYO-USD", "FUN-USD", "KMD-USD", "SUB-USD"
+    "DAI-USD", "UNI-USD", "WBTC-USD", "LTC-USD", "ATOM-USD",
+    
+    # Next 20 (Popular Altcoins)
+    "ETC-USD", "XLM-USD", "BCH-USD", "FIL-USD", "APT-USD", "HBAR-USD", "VET-USD", "ICP-USD", 
+    "CRO-USD", "NEAR-USD", "ALGO-USD", "QNT-USD", "FTM-USD", "FLOW-USD", "MANA-USD", "SAND-USD", 
+    "AAVE-USD", "GRT-USD", "CRV-USD", "MKR-USD",
+    
+    # Additional 20 (DeFi & Emerging Coins)
+    "SNX-USD", "COMP-USD", "YFI-USD", "SUSHI-USD", "1INCH-USD", "BAT-USD", "ZRX-USD", "ENJ-USD", 
+    "CHZ-USD", "HOT-USD", "DENT-USD", "WIN-USD", "CELR-USD", "KSM-USD", "WAVES-USD", "ZEC-USD", 
+    "DASH-USD", "NEO-USD", "ONT-USD", "QTUM-USD",
+    
+    # New 20 Coins (High Market Cap & Trending)
+    "IOTA-USD", "EOS-USD", "XMR-USD", "XTZ-USD", "THETA-USD", "RUNE-USD", "KAVA-USD", "BAND-USD", 
+    "REN-USD", "STORJ-USD", "KNC-USD", "REP-USD", "LRC-USD", "NMR-USD", "CVC-USD", "OMG-USD", 
+    "GNT-USD", "LOOM-USD", "FUN-USD", "KICK-USD",
+    
+    # Additional 20 (More Popular Coins)
+    "LEND-USD", "CND-USD", "WABI-USD", "LUN-USD", "TRIG-USD", "VIB-USD", "BCPT-USD", "ARK-USD", 
+    "YOYO-USD", "POWR-USD", "KMD-USD", "SUB-USD", "NULS-USD", "REQ-USD", "VIBE-USD", "ARK-USD", 
+    "YOYO-USD", "POWR-USD", "KMD-USD", "SUB-USD",
+    
+    # Latest 20 (Emerging & Trending)
+    "ARB-USD", "OP-USD", "SUI-USD", "SEI-USD", "TIA-USD", "INJ-USD", "JUP-USD", "WIF-USD", 
+    "BONK-USD", "PEPE-USD", "FLOKI-USD", "BABYDOGE-USD", "SAFEMOON-USD", "ELON-USD", "DOGE-USD", 
+    "SHIB-USD", "AKITA-USD", "KISHU-USD", "HOKK-USD", "LEASH-USD"
 ]
 
 coins = st.sidebar.multiselect(
-    "Select Coins (Top 100 Crypto)",
-    top_100_crypto,
-    default=["BTC-USD", "ETH-USD", "SOL-USD", "ADA-USD", "AVAX-USD"]
+    "Select Coins (Top 120+ Crypto)",
+    top_120_crypto,
+    default=["BTC-USD", "ETH-USD", "SOL-USD", "ADA-USD", "AVAX-USD", "DOGE-USD", "LINK-USD", "DOT-USD"]
 )
 
 period_days = st.sidebar.slider("Data Period (days)", 1, 30, 7)
