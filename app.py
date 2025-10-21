@@ -11,7 +11,7 @@ import time
 
 st.set_page_config(page_title="AI Crypto Indicator", layout="wide")
 
-st.title("💹 AI-Powered Crypto Buy/Sell Dashboard with Profit Simulation")
+st.title("💹 AI-Powered Crypto Buy/Sell Signal Dashboard")
 
 # --- Sidebar settings ---
 st.sidebar.header("Settings")
@@ -57,7 +57,6 @@ coins = st.sidebar.multiselect(
 
 period_days = st.sidebar.slider("Data Period (days)", 1, 30, 7)
 show_chart = st.sidebar.checkbox("Show Trend Charts", True)
-show_simulation = st.sidebar.checkbox("Show Profit Simulation", True)
 
 # Auto-refresh settings
 st.sidebar.markdown("---")
@@ -70,7 +69,7 @@ else:
     interval_seconds = None
 
 st.sidebar.markdown("---")
-st.sidebar.caption("⚙️ Data: Yahoo Finance | Forecast: ML Linear Regression | Educational only")
+st.sidebar.caption("⚙️ Data: Yahoo Finance | Signals: ML Linear Regression | Educational only")
 
 # Add refresh button
 if st.sidebar.button("🔄 Refresh Data Now"):
@@ -177,23 +176,15 @@ for coin in coins:
         )
         st.plotly_chart(fig, width='stretch')
 
-    # --- Historical Simulation ---
-    accuracy, total_return = None, None
-    if show_simulation:
-        df["Return"] = df["y"].pct_change()
-        df["Signal"] = np.where(df["Return"].rolling(3).mean() > 0, "BUY", "SELL")
-        df["Strategy"] = np.where(df["Signal"].shift(1) == "BUY", df["Return"], -df["Return"])
-        df.dropna(inplace=True)
-
-        total_return = (df["Strategy"] + 1).prod() - 1
-        correct = np.sum((df["Signal"].shift(1) == "BUY") & (df["Return"] > 0)) + np.sum(
-            (df["Signal"].shift(1) == "SELL") & (df["Return"] < 0)
-        )
-        accuracy = correct / len(df) * 100
-
-        st.write(f"📊 **Historical Simulation for {coin.replace('-USD','')}**")
-        st.metric(label="Simulated ROI (last 60 days)", value=f"{round(total_return*100,2)}%")
-        st.metric(label="Prediction Accuracy", value=f"{round(accuracy,2)}%")
+    # --- Signal Display ---
+    st.write(f"📊 **Trading Signal for {coin.replace('-USD','')}**")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric(label="Current Price", value=f"${last_price:.2f}")
+    with col2:
+        st.metric(label="Predicted Price (3 days)", value=f"${next_price:.2f}")
+    with col3:
+        st.metric(label="Expected Change", value=f"{predicted_change:.2f}%")
 
     results.append({
         "Coin": coin.replace("-USD", ""),
@@ -201,9 +192,7 @@ for coin in coins:
         "Predicted Price (3 days)": round(next_price, 2),
         "Change (%)": round(predicted_change, 2),
         "Signal": signal,
-        "Confidence": f"{min(round(abs(predicted_change)*10,1),100)}%",
-        "Accuracy (last 60d)": f"{round(accuracy,2)}%" if accuracy else "N/A",
-        "Simulated ROI": f"{round(total_return*100,2)}%" if total_return else "N/A"
+        "Confidence": f"{min(round(abs(predicted_change)*10,1),100)}%"
     })
 
 # --- Summary Table ---
