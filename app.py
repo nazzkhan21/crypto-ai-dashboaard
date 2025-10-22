@@ -8,8 +8,25 @@ from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
 import datetime
 import time
+from functools import lru_cache
 
 st.set_page_config(page_title="AI Crypto Indicator", layout="wide")
+
+# Real-time data fetching with caching
+@lru_cache(maxsize=128)
+def fetch_real_time_data(coin, start_date_str, end_date_str, cache_key):
+    """Fetch real-time data with caching to avoid repeated API calls"""
+    try:
+        df = yf.download(coin, start=start_date_str, end=end_date_str, progress=False, auto_adjust=True)
+        return df
+    except Exception as e:
+        st.error(f"Error fetching data for {coin}: {str(e)}")
+        return pd.DataFrame()
+
+def get_cached_data(coin, start_date, end_date):
+    """Get cached data or fetch fresh data"""
+    cache_key = f"{coin}_{start_date}_{end_date}_{int(time.time() // 60)}"  # Cache for 1 minute
+    return fetch_real_time_data(coin, str(start_date), str(end_date), cache_key)
 
 st.title("💹 AI-Powered Crypto Buy/Sell Signal Dashboard")
 
@@ -60,11 +77,11 @@ show_chart = st.sidebar.checkbox("Show Trend Charts", True)
 
 # Auto-refresh settings
 st.sidebar.markdown("---")
-st.sidebar.subheader("🔄 Auto Refresh")
-auto_refresh = st.sidebar.checkbox("Enable Auto Refresh", True)
+st.sidebar.subheader("🔄 Real-Time Auto Refresh")
+auto_refresh = st.sidebar.checkbox("Enable Real-Time Updates", True)
 if auto_refresh:
-    refresh_interval = st.sidebar.selectbox("Refresh Interval", ["1 minute", "5 minutes", "10 minutes"], index=0)
-    interval_seconds = {"1 minute": 60, "5 minutes": 300, "10 minutes": 600}[refresh_interval]
+    refresh_interval = st.sidebar.selectbox("Refresh Interval", ["1 minute", "2 minutes", "5 minutes"], index=0)
+    interval_seconds = {"1 minute": 60, "2 minutes": 120, "5 minutes": 300}[refresh_interval]
 else:
     interval_seconds = None
 
@@ -75,26 +92,44 @@ st.sidebar.caption("⚙️ Data: Yahoo Finance | Signals: ML Linear Regression |
 if st.sidebar.button("🔄 Refresh Data Now"):
     st.rerun()
 
-# Auto-refresh status
+# Real-time auto-refresh implementation
 if auto_refresh:
-    st.info(f"🔄 Auto-refresh enabled: {refresh_interval.lower()}")
+    st.info(f"🔄 Real-time updates enabled: {refresh_interval.lower()}")
+    
+    # Create a placeholder for countdown
+    countdown_placeholder = st.empty()
+    
+    # Show countdown and auto-refresh
+    for i in range(interval_seconds, 0, -1):
+        countdown_placeholder.info(f"⏰ Next update in {i} seconds...")
+        time.sleep(1)
+    
+    # Clear countdown and refresh
+    countdown_placeholder.empty()
+    st.rerun()
 else:
-    st.info("🔄 Auto-refresh disabled")
+    st.info("🔄 Real-time updates disabled")
 
 # --- Date range ---
 end_date = datetime.date.today()
 start_date = end_date - datetime.timedelta(days=period_days)
 
 # Add timestamp
-st.write(f"📅 Last updated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+# Real-time data status
+current_time = datetime.datetime.now()
+st.write(f"📅 Data fetched at: {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
+if auto_refresh:
+    st.success(f"🔄 Real-time updates active - Next refresh in {refresh_interval.lower()}")
+else:
+    st.warning("⚠️ Real-time updates disabled - Click 'Refresh Data Now' for updates")
 
 results = []
 
 for coin in coins:
     st.subheader(f"{coin.replace('-USD','')} Trend & Forecast")
 
-    # Download data
-    df = yf.download(coin, start=start_date, end=end_date, progress=False, auto_adjust=True)
+    # Download real-time data with caching
+    df = get_cached_data(coin, start_date, end_date)
     if df.empty:
         st.warning(f"No data for {coin}")
         continue
