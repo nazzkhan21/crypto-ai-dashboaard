@@ -8,25 +8,37 @@ from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
 import datetime
 import time
-from functools import lru_cache
 
 st.set_page_config(page_title="AI Crypto Indicator", layout="wide")
 
-# Real-time data fetching with caching
-@lru_cache(maxsize=128)
-def fetch_real_time_data(coin, start_date_str, end_date_str, cache_key):
-    """Fetch real-time data with caching to avoid repeated API calls"""
+# Background data fetching with session state caching
+def fetch_real_time_data(coin, start_date, end_date):
+    """Fetch real-time data with session state caching"""
     try:
-        df = yf.download(coin, start=start_date_str, end=end_date_str, progress=False, auto_adjust=True)
+        df = yf.download(coin, start=start_date, end=end_date, progress=False, auto_adjust=True)
         return df
     except Exception as e:
         st.error(f"Error fetching data for {coin}: {str(e)}")
         return pd.DataFrame()
 
 def get_cached_data(coin, start_date, end_date):
-    """Get cached data or fetch fresh data"""
-    cache_key = f"{coin}_{start_date}_{end_date}_{int(time.time() // 60)}"  # Cache for 1 minute
-    return fetch_real_time_data(coin, str(start_date), str(end_date), cache_key)
+    """Get cached data from session state or fetch fresh data"""
+    cache_key = f"data_{coin}_{start_date}_{end_date}"
+    cache_time_key = f"time_{coin}_{start_date}_{end_date}"
+    
+    # Check if we have cached data that's less than 1 minute old
+    if cache_key in st.session_state and cache_time_key in st.session_state:
+        cache_time = st.session_state[cache_time_key]
+        if time.time() - cache_time < 60:  # Cache for 1 minute
+            return st.session_state[cache_key]
+    
+    # Fetch fresh data and cache it
+    df = fetch_real_time_data(coin, start_date, end_date)
+    if not df.empty:
+        st.session_state[cache_key] = df
+        st.session_state[cache_time_key] = time.time()
+    
+    return df
 
 st.title("💹 AI-Powered Crypto Buy/Sell Signal Dashboard")
 
@@ -92,21 +104,22 @@ st.sidebar.caption("⚙️ Data: Yahoo Finance | Signals: ML Linear Regression |
 if st.sidebar.button("🔄 Refresh Data Now"):
     st.rerun()
 
-# Real-time auto-refresh implementation
+# Background auto-refresh implementation (non-blocking)
 if auto_refresh:
     st.info(f"🔄 Real-time updates enabled: {refresh_interval.lower()}")
     
-    # Create a placeholder for countdown
+    # Use JavaScript for background refresh without blocking UI
+    st.markdown(f"""
+    <script>
+    setTimeout(function(){{
+        window.location.reload();
+    }}, {interval_seconds * 1000});
+    </script>
+    """, unsafe_allow_html=True)
+    
+    # Show countdown without blocking
     countdown_placeholder = st.empty()
-    
-    # Show countdown and auto-refresh
-    for i in range(interval_seconds, 0, -1):
-        countdown_placeholder.info(f"⏰ Next update in {i} seconds...")
-        time.sleep(1)
-    
-    # Clear countdown and refresh
-    countdown_placeholder.empty()
-    st.rerun()
+    countdown_placeholder.info(f"⏰ Next automatic update in {interval_seconds} seconds...")
 else:
     st.info("🔄 Real-time updates disabled")
 
@@ -115,21 +128,26 @@ end_date = datetime.date.today()
 start_date = end_date - datetime.timedelta(days=period_days)
 
 # Add timestamp
-# Real-time data status
+# Non-blocking real-time data status
 current_time = datetime.datetime.now()
 st.write(f"📅 Data fetched at: {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
+
+# Background update status (non-blocking)
 if auto_refresh:
-    st.success(f"🔄 Real-time updates active - Next refresh in {refresh_interval.lower()}")
+    st.success(f"🔄 Background updates active - Auto-refresh every {refresh_interval.lower()}")
+    st.info("💡 UI remains responsive while data updates in the background")
 else:
-    st.warning("⚠️ Real-time updates disabled - Click 'Refresh Data Now' for updates")
+    st.warning("⚠️ Background updates disabled - Click 'Refresh Data Now' for updates")
 
 results = []
 
 for coin in coins:
     st.subheader(f"{coin.replace('-USD','')} Trend & Forecast")
 
-    # Download real-time data with caching
-    df = get_cached_data(coin, start_date, end_date)
+    # Non-blocking data fetch with progress indicator
+    with st.spinner(f"Fetching latest data for {coin.replace('-USD','')}..."):
+        df = get_cached_data(coin, start_date, end_date)
+    
     if df.empty:
         st.warning(f"No data for {coin}")
         continue
