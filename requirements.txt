@@ -4,3 +4,6 @@ numpy>=2.3.0
 yfinance>=0.2.66
 plotly>=6.3.0
 scikit-learn>=1.7.0
+python-binance>=1.0.19
+requests>=2.31.0
+websocket-client>=1.6.0

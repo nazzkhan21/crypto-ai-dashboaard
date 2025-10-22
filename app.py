@@ -8,18 +8,79 @@ from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
 import datetime
 import time
+from binance.client import Client
+from binance.exceptions import BinanceAPIException
+import requests
 
 st.set_page_config(page_title="AI Crypto Indicator", layout="wide")
 
-# Background data fetching with session state caching
-def fetch_real_time_data(coin, start_date, end_date):
-    """Fetch real-time data with session state caching"""
+# Hybrid data fetching system (Binance + Yahoo Finance)
+def fetch_binance_data(symbol, interval='1h', limit=100):
+    """Fetch real-time data from Binance API"""
+    try:
+        # Initialize Binance client (no API keys needed for public data)
+        client = Client()
+        
+        # Convert symbol format (BTC-USD -> BTCUSDT)
+        binance_symbol = symbol.replace('-USD', 'USDT')
+        
+        # Get historical klines data
+        klines = client.get_historical_klines(
+            binance_symbol, 
+            interval, 
+            limit=limit
+        )
+        
+        if not klines:
+            return pd.DataFrame()
+            
+        # Convert to DataFrame
+        df = pd.DataFrame(klines, columns=[
+            'timestamp', 'open', 'high', 'low', 'close', 'volume',
+            'close_time', 'quote_asset_volume', 'number_of_trades',
+            'taker_buy_base_asset_volume', 'taker_buy_quote_asset_volume', 'ignore'
+        ])
+        
+        # Convert timestamp to datetime
+        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+        df['close'] = df['close'].astype(float)
+        df['open'] = df['open'].astype(float)
+        df['high'] = df['high'].astype(float)
+        df['low'] = df['low'].astype(float)
+        df['volume'] = df['volume'].astype(float)
+        
+        # Set timestamp as index
+        df.set_index('timestamp', inplace=True)
+        
+        return df[['open', 'high', 'low', 'close', 'volume']]
+        
+    except BinanceAPIException as e:
+        st.warning(f"Binance API error for {symbol}: {str(e)}")
+        return pd.DataFrame()
+    except Exception as e:
+        st.warning(f"Error fetching Binance data for {symbol}: {str(e)}")
+        return pd.DataFrame()
+
+def fetch_yahoo_data(coin, start_date, end_date):
+    """Fetch data from Yahoo Finance as fallback"""
     try:
         df = yf.download(coin, start=start_date, end=end_date, progress=False, auto_adjust=True)
         return df
     except Exception as e:
-        st.error(f"Error fetching data for {coin}: {str(e)}")
+        st.warning(f"Yahoo Finance error for {coin}: {str(e)}")
         return pd.DataFrame()
+
+def fetch_hybrid_data(coin, start_date, end_date):
+    """Fetch data using hybrid approach (Binance primary, Yahoo Finance fallback)"""
+    # Try Binance first for real-time data
+    df_binance = fetch_binance_data(coin.replace('-USD', ''), interval='1h', limit=168)  # 1 week of hourly data
+    
+    if not df_binance.empty:
+        return df_binance
+    
+    # Fallback to Yahoo Finance
+    df_yahoo = fetch_yahoo_data(coin, start_date, end_date)
+    return df_yahoo
 
 def get_cached_data(coin, start_date, end_date):
     """Get cached data from session state or fetch fresh data"""
@@ -32,8 +93,8 @@ def get_cached_data(coin, start_date, end_date):
         if time.time() - cache_time < 60:  # Cache for 1 minute
             return st.session_state[cache_key]
     
-    # Fetch fresh data and cache it
-    df = fetch_real_time_data(coin, start_date, end_date)
+    # Fetch fresh data using hybrid approach and cache it
+    df = fetch_hybrid_data(coin, start_date, end_date)
     if not df.empty:
         st.session_state[cache_key] = df
         st.session_state[cache_time_key] = time.time()
@@ -98,7 +159,7 @@ else:
     interval_seconds = None
 
 st.sidebar.markdown("---")
-st.sidebar.caption("⚙️ Data: Yahoo Finance | Signals: ML Linear Regression | Educational only")
+st.sidebar.caption("⚙️ Data: Binance API + Yahoo Finance | Signals: ML Linear Regression | Educational only")
 
 # Add refresh button
 if st.sidebar.button("🔄 Refresh Data Now"):
@@ -128,9 +189,12 @@ end_date = datetime.date.today()
 start_date = end_date - datetime.timedelta(days=period_days)
 
 # Add timestamp
-# Non-blocking real-time data status
+# Enhanced data status with API source information
 current_time = datetime.datetime.now()
 st.write(f"📅 Data fetched at: {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
+
+# Data source information
+st.info("🔗 **Data Sources:** Binance API (Primary) + Yahoo Finance (Fallback) for enhanced accuracy")
 
 # Background update status (non-blocking)
 if auto_refresh:
@@ -144,16 +208,26 @@ results = []
 for coin in coins:
     st.subheader(f"{coin.replace('-USD','')} Trend & Forecast")
 
-    # Non-blocking data fetch with progress indicator
+    # Enhanced data fetch with API source indication
     with st.spinner(f"Fetching latest data for {coin.replace('-USD','')}..."):
         df = get_cached_data(coin, start_date, end_date)
     
     if df.empty:
-        st.warning(f"No data for {coin}")
+        st.warning(f"No data available for {coin}")
         continue
+    
+    # Show data source for this coin
+    if not df.empty:
+        st.caption(f"📊 Data source: {'Binance API' if 'volume' in df.columns else 'Yahoo Finance'}")
 
+    # Handle different data formats from Binance vs Yahoo Finance
     df.reset_index(inplace=True)
-    df = df.rename(columns={"Date": "ds", "Close": "y"})
+    
+    # Rename columns based on data source
+    if 'close' in df.columns:  # Binance data
+        df = df.rename(columns={"timestamp": "ds", "close": "y"})
+    else:  # Yahoo Finance data
+        df = df.rename(columns={"Date": "ds", "Close": "y"})
 
     # Enhanced ML-based prediction with live data analysis
     df['days'] = range(len(df))
